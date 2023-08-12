@@ -22,5 +22,7 @@ user_route.post('/register',userController.Register);
 user_route.post('/login',userController.login);
 user_route.get('/profile',userController.profile);
 user_route.get('/edit',userController.edit);
+user_route.post('/editPassword',userController.editPassword)
 user_route.post('/editProfile',upload.single('image'),userController.editValue);
+
 module.exports = user_route;

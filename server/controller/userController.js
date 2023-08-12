@@ -35,8 +35,6 @@ const Register = async (req, res) => {
 };
 
 const login = async (req, res) => {
-  console.log("enetering in to the login------", req.body);
-
   const Email = req.body.formValues.email;
   const password = req.body.formValues.password;
   const findUser = await Users.findOne({ Email: Email });
@@ -74,10 +72,14 @@ const profile = async(req,res)=>{
 
     const decoded = jwt.verify(token, 'secretCode');
     const userId = decoded.id;
+    if(userId){
+      const userData = await Users.findOne({_id:userId})
+      res.json({userData})
+    }else{
+      res.json({status :false})
+    }
 
-     const userData = await Users.findOne({_id:userId})
-     console.log(userData,'enterint in to the get');
-     res.json({userData})
+    
 
   } catch (error) {
     console.log('Failed to decode JWT:', error.message);
@@ -87,39 +89,86 @@ const profile = async(req,res)=>{
   const edit = async(req,res)=>{
     try {
       const data = req.query.user
+
       const token = data
-  
       const decoded = jwt.verify(token, 'secretCode');
       const userId = decoded.id;
-  
-       const userData = await Users.findOne({_id:userId})
-       const success=true;
-       console.log("data is comming");
-       console.log(userData,'---------suscess is sented--------');
-       res.json({userData,success})
+
+
+            if(userId){
+              const userData = await Users.findOne({_id:userId})
+              const success=true;
+              console.log("data is comming");
+              res.json({userData,success})
+            }else{
+              res.json({status:false})
+            }
+    
     } catch (error) {
       console.log(error.message);
     }
   }
+
+  
   const editValue=async(req,res)=>{
     try {
-      console.log("entering in to value editing ",req.body)
       const data = req.body.user;
+     console.log(req.body);
       const token = data
-      console.log(req.file.filename,'sdkfmdskfmdskomk-----------------------');
       const decoded = jwt.verify(token, 'secretCode');
       const userId = decoded.id;
-  
-       await Users.findOneAndUpdate({_id:userId},{Name: req.body.name,Email: req.body.email,Password: req.body.password,image: req.file.filename}).then((value)=>{
-        console.log(value,'---updataed');
-       })
-       const success=true;
-        res.json({success})
+      
+          if(userId){
+            let image; 
+            if(!req.file){
+            const value= await Users.findOne({_id:userId})
+            image=value.image;
+            }else{
+                image =  req.file.filename;
+            }
+            await Users.findOneAndUpdate(
+              { _id: userId },
+              {
+                Name: req.body.name,
+                Email: req.body.email,
+                image: image
+              }
+            ).then((value)=>{
+              console.log("value was updated successfully");
+            })
+            const success=true;
+              res.json({success})
+          }else{
+            res.json({status:false})
+          }
      } catch (error) {
       console.log(error.message);
     }
   }
 const home = async (req, res) => {};
+
+const editPassword =async(req,res)=>{
+  const code = req.body.user;
+  console.log(req.body);
+  const verify = jwt.verify(code,"secretCode")
+  const is_user = verify.id;
+
+  if(is_user){
+      const userData = await Users.findOne({_id:is_user})
+      if(userData.Password==req.body.currentPassword){
+        await Users.findOneAndUpdate({_id:is_user},{$set:{Password:req.body.newPassword}}).then((value)=>{
+          console.log(value);
+        })
+        .catch((err)=>{
+          console.log(err);
+        })
+       res.json({status:true})
+      }else{
+        console.log("password is not current ");
+        res.json({status:false})
+      }
+  }
+}
 
 module.exports = {
   Register,
@@ -127,5 +176,6 @@ module.exports = {
   home,
   profile,
   edit,
-  editValue
+  editValue,
+  editPassword
 };
